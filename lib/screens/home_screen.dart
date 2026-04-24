@@ -79,7 +79,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
+                        builder: (_) => const LoginScreen(),
                       ),
                     );
                   },
@@ -92,7 +92,6 @@ class HomeScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
-
                         Padding(
                           padding: EdgeInsets.all(8.0),
                           child: CircleAvatar(
@@ -100,15 +99,14 @@ class HomeScreen extends StatelessWidget {
                             child: Icon(Icons.navigation, color: Colors.black),
                           ),
                         ),
-
                         Text(
                           "Explore Now",
                           style: TextStyle(color: Colors.white),
                         ),
-
                         Padding(
                           padding: EdgeInsets.only(right: 16),
-                          child: Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                          child: Icon(Icons.arrow_forward_ios,
+                              color: Colors.white, size: 16),
                         ),
                       ],
                     ),
