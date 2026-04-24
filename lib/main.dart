@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -20,11 +21,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Travel App',
+      title: 'RoamEase',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       ),
-      home: const HomeScreen(), // ✅ START FROM EXPLORE SCREEN
+      // home: const LoginScreen(), // ✅ start from login
+      home: const HomeScreen(),
     );
   }
 }

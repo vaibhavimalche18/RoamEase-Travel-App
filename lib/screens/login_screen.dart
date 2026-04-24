@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
+import 'explore_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,16 +18,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final auth = AuthService();
 
+  bool isLoading = false; // ✅ NEW
+
   void handleLogin() async {
+    setState(() => isLoading = true); // start loading
+
     String? res = await auth.login(
       emailController.text.trim(),
       passwordController.text.trim(),
     );
 
+    setState(() => isLoading = false); // stop loading
+
     if (res == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) =>  ExploreScreen()),
       );
     } else {
       ScaffoldMessenger.of(context)
@@ -44,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/travel.jpg"), // add this
+                image: AssetImage("assets/images/travel.jpg"),
                 fit: BoxFit.cover,
               ),
             ),
@@ -83,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
+                        /// EMAIL
                         TextField(
                           controller: emailController,
                           style: const TextStyle(color: Colors.white),
@@ -99,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 15),
 
+                        /// PASSWORD
                         TextField(
                           controller: passwordController,
                           obscureText: true,
@@ -116,9 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        /// 🚀 Login Button
+                        /// 🚀 LOGIN BUTTON (UPDATED)
                         GestureDetector(
-                          onTap: handleLogin,
+                          onTap: isLoading ? null : handleLogin,
                           child: Container(
                             height: 55,
                             decoration: BoxDecoration(
@@ -127,12 +136,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            child: const Center(
-                              child: Text(
+                            child: Center(
+                              child: isLoading
+                                  ? const CircularProgressIndicator(
+                                  color: Colors.white)
+                                  : const Text(
                                 "Login",
                                 style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18),
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                ),
                               ),
                             ),
                           ),
@@ -140,12 +153,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 10),
 
+                        /// SIGNUP NAVIGATION
                         TextButton(
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => const SignupScreen()),
+                                builder: (_) => const SignupScreen(),
+                              ),
                             );
                           },
                           child: const Text(
