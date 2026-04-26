@@ -34,4 +34,21 @@ class MyApp extends StatelessWidget {
         },
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+
+      themeMode: _themeMode,
+
+      /// 👉 Choose ONE starting screen
+      home: HomeScreen(),
+      // OR
+      // home: ExploreScreen(),
+    );
+  }
 }
