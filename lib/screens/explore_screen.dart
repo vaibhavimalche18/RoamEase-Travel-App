@@ -10,6 +10,8 @@ import 'favorite_screen.dart';
 import 'profile_screen.dart';
 import 'quest_screen.dart';
 import 'settings_screen.dart';
+import '../main.dart';
+import 'login_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
    ExploreScreen({super.key});
@@ -81,6 +83,87 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void initState() {
     super.initState();
     getUserName();
+  }
+
+    void _openSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              /// TITLE
+              const Text(
+                "Settings",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 🌙 DARK MODE ✅ FIXED
+              ListTile(
+                leading: const Icon(Icons.dark_mode),
+                title: const Text("Dark Mode"),
+                onTap: () {
+                  final appState = MyApp.of(context);
+
+                  if (appState != null) {
+                    appState.changeTheme(ThemeMode.dark);
+                  }
+
+                  Navigator.pop(context);
+                },
+              ),
+
+              /// ☀️ LIGHT MODE ✅ FIXED
+              ListTile(
+                leading: const Icon(Icons.light_mode),
+                title: const Text("Light Mode"),
+                onTap: () {
+                  final appState = MyApp.of(context);
+
+                  if (appState != null) {
+                    appState.changeTheme(ThemeMode.light);
+                  }
+
+                  Navigator.pop(context);
+                },
+              ),
+
+              /// 🔔 NOTIFICATIONS (still dummy)
+              ListTile(
+                leading: const Icon(Icons.notifications),
+                title: const Text("Notifications"),
+                onTap: () {
+                  print("Notifications clicked");
+                },
+              ),
+
+              /// 🚪 LOGOUT ✅ FIXED PROPERLY
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text("Logout"),
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => LoginScreen()),
+                        (route) => false,
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
