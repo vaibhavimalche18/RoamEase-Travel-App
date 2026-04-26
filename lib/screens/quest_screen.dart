@@ -32,7 +32,7 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -61,10 +61,11 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
                 indicatorColor: _stampRed,
                 indicatorWeight: 2,
                 labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.5),
+                    fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.2),
                 tabs: const [
                   Tab(text: '✈  ACTIVE'),
-                  Tab(text: '🏆  COMPLETED'),
+                  Tab(text: '🏆  DONE'),
+                  Tab(text: '📬  INVITES'),
                 ],
               ),
             ],
@@ -128,6 +129,8 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
                 showCompleted: true,
                 onEmpty: () => _showCreateQuestDialog(context),
               ),
+              // ── INVITES TAB ───────────────────
+              _InvitesTab(service: _service, uid: _uid),
             ],
           );
         },
@@ -137,8 +140,10 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
 
   void _showCreateQuestDialog(BuildContext context) {
     final titleCtrl  = TextEditingController();
-    final friendCtrl = TextEditingController();
+    final friendCtrl = TextEditingController(); // now accepts username
     final placesCtrl = TextEditingController();
+    String? _errorMsg;
+    bool _loading = false;
 
     showModalBottomSheet(
       context: context,
@@ -146,64 +151,108 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
       backgroundColor: _paper,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-            24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: _stampRed, width: 2),
-                  borderRadius: BorderRadius.circular(4),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: _stampRed, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('NEW QUEST',
+                      style: TextStyle(
+                          color: _stampRed,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 3)),
                 ),
-                child: const Text('NEW QUEST',
-                    style: TextStyle(
-                        color: _stampRed,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        letterSpacing: 3)),
               ),
-            ),
-            const SizedBox(height: 20),
-            _stampInput(titleCtrl, 'Quest title e.g. "10 places in Pune"', '🚩'),
-            const SizedBox(height: 12),
-            _stampInput(placesCtrl, 'Places (comma separated)', '📍'),
-            const SizedBox(height: 12),
-            _stampInput(friendCtrl, "Friend's user ID", '👤'),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _stampRed,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 0,
+              const SizedBox(height: 20),
+              _stampInput(titleCtrl, 'Quest title e.g. "10 places in Pune"', '🚩'),
+              const SizedBox(height: 12),
+              _stampInput(placesCtrl, 'Places (comma separated)', '📍'),
+              const SizedBox(height: 12),
+              _stampInput(friendCtrl, "Friend's username (e.g. gayatri)", '👤'),
+              if (_errorMsg != null) ...[
+                const SizedBox(height: 8),
+                Row(children: [
+                  const Text('⚠️', style: TextStyle(fontSize: 13)),
+                  const SizedBox(width: 6),
+                  Text(_errorMsg!,
+                      style: const TextStyle(color: _stampRed, fontSize: 12)),
+                ]),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _stampRed,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    elevation: 0,
+                  ),
+                  onPressed: _loading ? null : () async {
+                    setSheet(() { _loading = true; _errorMsg = null; });
+
+                    final username = friendCtrl.text.trim();
+                    if (username.isEmpty) {
+                      setSheet(() { _errorMsg = "Enter your friend's username"; _loading = false; });
+                      return;
+                    }
+
+                    // Look up UID from username
+                    final friendUid = await _service.lookupUidByUsername(username);
+                    if (friendUid == null) {
+                      setSheet(() {
+                        _errorMsg = 'No user found with username "$username"';
+                        _loading = false;
+                      });
+                      return;
+                    }
+
+                    // Make sure they're not inviting themselves
+                    if (friendUid == _uid) {
+                      setSheet(() {
+                        _errorMsg = "That's your own username!";
+                        _loading = false;
+                      });
+                      return;
+                    }
+
+                    final places = placesCtrl.text
+                        .split(',')
+                        .map((e) => e.trim())
+                        .where((e) => e.isNotEmpty)
+                        .toList();
+
+                    await _service.createQuest(
+                      title: titleCtrl.text,
+                      placeIds: places,
+                      friendUid: friendUid,
+                    );
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: _loading
+                      ? const SizedBox(
+                          height: 18, width: 18,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Text('SEND QUEST',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 2)),
                 ),
-                onPressed: () async {
-                  final places = placesCtrl.text
-                      .split(',')
-                      .map((e) => e.trim())
-                      .where((e) => e.isNotEmpty)
-                      .toList();
-                  await _service.createQuest(
-                    title: titleCtrl.text,
-                    placeIds: places,
-                    friendUid: friendCtrl.text.trim(),
-                  );
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('SEND QUEST',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 2)),
-              ),
-            )
-          ],
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -229,6 +278,297 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: const BorderSide(color: _stampRed, width: 1.5)),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// INVITES TAB
+// ─────────────────────────────────────────────
+class _InvitesTab extends StatelessWidget {
+  final QuestService service;
+  final String uid;
+
+  const _InvitesTab({required this.service, required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: service.getPendingInvites(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: _stampRed));
+        }
+
+        final invites = snapshot.data!.docs;
+
+        if (invites.isEmpty) {
+          return Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 90, height: 90,
+                decoration: BoxDecoration(
+                  border: Border.all(color: _stampBlue, width: 2),
+                  color: _stampBlue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Center(
+                  child: Text('📬', style: TextStyle(fontSize: 40)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text('NO PENDING INVITES',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: _inkBrown,
+                      letterSpacing: 3)),
+              const SizedBox(height: 8),
+              const Text('Quest invites from friends appear here',
+                  style: TextStyle(color: _dimInk, fontSize: 13)),
+            ]),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+          itemCount: invites.length,
+          itemBuilder: (context, i) {
+            final doc = invites[i];
+            final q = doc.data() as Map<String, dynamic>;
+            final questId = doc.id;
+            final places = List<String>.from(q['places'] ?? []);
+            final color = _stampColors[i % _stampColors.length];
+
+            return _InviteCard(
+              questId: questId,
+              title: q['title'] ?? 'Untitled Quest',
+              places: places,
+              service: service,
+              stampColor: color,
+              questIndex: i,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// INVITE CARD
+// ─────────────────────────────────────────────
+class _InviteCard extends StatefulWidget {
+  final String questId, title;
+  final List<String> places;
+  final QuestService service;
+  final Color stampColor;
+  final int questIndex;
+
+  const _InviteCard({
+    required this.questId,
+    required this.title,
+    required this.places,
+    required this.service,
+    required this.stampColor,
+    required this.questIndex,
+  });
+
+  @override
+  State<_InviteCard> createState() => _InviteCardState();
+}
+
+class _InviteCardState extends State<_InviteCard> {
+  bool _loading = false;
+
+  static const _icons = ['✈','🌍','🗺','🧭','⛵','🏔','🌊'];
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _icons[widget.questIndex % _icons.length];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: _paper,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: widget.stampColor.withOpacity(0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+              color: widget.stampColor.withOpacity(0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: Column(
+          children: [
+            // Colored top bar
+            Container(height: 6, color: widget.stampColor),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(children: [
+                    Text(icon, style: const TextStyle(fontSize: 26)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.title.toUpperCase(),
+                              style: TextStyle(
+                                  color: widget.stampColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  letterSpacing: 1.5)),
+                          const SizedBox(height: 2),
+                          Text('${widget.places.length} destinations',
+                              style: const TextStyle(
+                                  color: _dimInk, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    // "Invited!" badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: widget.stampColor.withOpacity(0.5)),
+                        borderRadius: BorderRadius.circular(99),
+                        color: widget.stampColor.withOpacity(0.07),
+                      ),
+                      child: Text('📬 INVITED',
+                          style: TextStyle(
+                              color: widget.stampColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1)),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 12),
+                  _PerforatedLine(color: widget.stampColor),
+                  const SizedBox(height: 12),
+
+                  // Places preview
+                  if (widget.places.isNotEmpty) ...[
+                    Text('DESTINATIONS',
+                        style: TextStyle(
+                            color: widget.stampColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: widget.places.take(6).map((place) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: widget.stampColor.withOpacity(0.07),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: widget.stampColor.withOpacity(0.3)),
+                        ),
+                        child: Text('📍 $place',
+                            style: TextStyle(
+                                color: widget.stampColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500)),
+                      )).toList(),
+                    ),
+                    if (widget.places.length > 6) ...[
+                      const SizedBox(height: 6),
+                      Text('+${widget.places.length - 6} more places',
+                          style: const TextStyle(color: _dimInk, fontSize: 11,
+                              fontStyle: FontStyle.italic)),
+                    ],
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Accept / Decline buttons
+                  if (_loading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: CircularProgressIndicator(color: _stampRed, strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    Row(children: [
+                      // Decline
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            setState(() => _loading = true);
+                            await widget.service.declineQuest(widget.questId);
+                            // card disappears automatically via stream
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: _stampRed.withOpacity(0.4)),
+                              color: _stampRed.withOpacity(0.04),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('✕', style: TextStyle(color: _stampRed, fontSize: 14)),
+                                SizedBox(width: 6),
+                                Text('DECLINE',
+                                    style: TextStyle(
+                                        color: _stampRed,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Accept
+                      Expanded(
+                        flex: 2,
+                        child: GestureDetector(
+                          onTap: () async {
+                            setState(() => _loading = true);
+                            await widget.service.acceptQuest(widget.questId);
+                            // quest moves to active tab automatically via stream
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(6),
+                              color: widget.stampColor,
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('✓', style: TextStyle(color: Colors.white, fontSize: 16,
+                                    fontWeight: FontWeight.bold)),
+                                SizedBox(width: 6),
+                                Text('ACCEPT QUEST',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -542,7 +882,6 @@ class _QuestCard extends StatelessWidget {
     );
   }
 
-  // ── inside _QuestCard ─────────────────────
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -700,7 +1039,6 @@ class _QuestCard extends StatelessWidget {
     );
   }
 
-  // ✅ FIXED: now correctly inside _QuestCard — has access to stampColor, questId, service
   void _showAddPlaceSheet(BuildContext context) {
     final ctrl = TextEditingController();
     showModalBottomSheet(
@@ -792,7 +1130,6 @@ class _QuestCard extends StatelessWidget {
       ),
     );
   }
-  // ── end of _QuestCard ─────────────────────
 }
 
 // ─────────────────────────────────────────────
