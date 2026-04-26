@@ -7,6 +7,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'map_screen.dart';
 import 'favorite_screen.dart';
+import 'profile_screen.dart';
+import 'quest_screen.dart';
+import 'settings_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
    ExploreScreen({super.key});
@@ -99,8 +102,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
 
+
             /// 🏠 HOME
-            Icon(Icons.home, color: Colors.blue),
+            IconButton(
+              icon: const Icon(Icons.home, color: Colors.blue),
+              onPressed: () {}, // already here, do nothing
+            ),
 
             /// 🗺️ MAP (🔥 THIS IS WHAT YOU WERE MISSING)
             IconButton(
@@ -129,7 +136,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
 
             /// ⚙️ SETTINGS
-            Icon(Icons.settings),
+            IconButton(
+               icon: const Icon(Icons.settings),
+               onPressed: () => Navigator.push(
+                 context,
+                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
+               ),
+             ),
           ],
         ),
       ),
@@ -165,11 +178,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                       ],
                     ),
-                     CircleAvatar(
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    ),
+                    child: CircleAvatar(
                       radius: 22,
                       backgroundImage: NetworkImage(
                           "https://i.pravatar.cc/150?img=3"),
-                    )
+                    ),
+                  )
                   ],
                 ),
 

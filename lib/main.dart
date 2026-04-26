@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/quest_screen.dart';
+import 'screens/dna_match_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +29,9 @@ class MyApp extends StatelessWidget {
       ),
       // home: const LoginScreen(), // ✅ start from login
       home: const HomeScreen(),
+       routes: {
+          '/quests': (context) => const QuestScreen(),
+        },
     );
   }
 }
