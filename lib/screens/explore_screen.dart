@@ -8,11 +8,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'map_screen.dart';
 import 'favorite_screen.dart';
 import 'profile_screen.dart';
-import 'quest_screen.dart';
 import 'settings_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
-   ExploreScreen({super.key});
+  ExploreScreen({super.key});
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
@@ -23,15 +22,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
   bool isLoading = false;
   String userName = "";
 
-  /// 🔍 SEARCH
   void searchPlaces(String query) async {
     if (query.length < 3) return;
-
     setState(() => isLoading = true);
-
     try {
       final results = await ApiService.searchPlaces(query);
-
       setState(() {
         places = results;
         isLoading = false;
@@ -59,16 +54,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
     },
   ];
 
-  /// 👤 GET USER NAME
   Future<void> getUserName() async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
-
       if (doc.exists) {
         setState(() {
           userName = doc['name'];
@@ -86,226 +78,200 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       /// 🔽 BOTTOM NAV
       bottomNavigationBar: Container(
         height: 70,
-        margin: EdgeInsets.all(12),
+        margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 10)
-          ],
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-
-
-            /// 🏠 HOME
             IconButton(
               icon: const Icon(Icons.home, color: Colors.blue),
-              onPressed: () {}, // already here, do nothing
+              onPressed: () {},
             ),
-
-            /// 🗺️ MAP (🔥 THIS IS WHAT YOU WERE MISSING)
             IconButton(
               icon: const Icon(Icons.map),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MapScreen(),
-                  ),
-                );
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MapScreen()),
+              ),
             ),
-
-            /// ❤️ FAVORITES
             IconButton(
               icon: const Icon(Icons.favorite),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FavoriteScreen(),
-                  ),
-                );
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FavoriteScreen()),
+              ),
             ),
-
-            /// ⚙️ SETTINGS
             IconButton(
-               icon: const Icon(Icons.settings),
-               onPressed: () => Navigator.push(
-                 context,
-                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
-               ),
-             ),
+              icon: const Icon(Icons.settings),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+            ),
           ],
         ),
       ),
 
       /// 🔼 BODY
+      /// KEY FIX: SafeArea > Column (not Padding > Column)
+      /// Expanded only works inside Row/Column/Flex, so the Column
+      /// must be the direct child of SafeArea with unbounded height.
       body: SafeArea(
-        ///child: SingleChildScrollView(
-          child: Padding(
-            padding:  EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                /// 🔝 HEADER
-                Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Hi, ${userName.isEmpty ? "User" : userName} 👋",
-                          style:  TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                        ),
-                         SizedBox(height: 5),
-                         Text(
-                          "Find your favorite place",
-                          style: TextStyle(fontSize: 22),
-                        ),
-                      ],
-                    ),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    ),
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundImage: NetworkImage(
-                          "https://i.pravatar.cc/150?img=3"),
-                    ),
-                  )
-                  ],
-                ),
-
-                 SizedBox(height: 20),
-
-                /// 🔍 SEARCH
-                TextField(
-                  onChanged: searchPlaces,
-                  decoration: InputDecoration(
-                    hintText: "Search destination...",
-                    prefixIcon:  Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.grey.shade200,
-                    border: OutlineInputBorder(
-                      borderRadius:
-                      BorderRadius.circular(25),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-
-                 SizedBox(height: 15),
-
-                /// 🧭 CATEGORY
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// All non-scrollable content goes in a Padding block
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// 🔝 HEADER
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      CategoryChip(title: "All", isSelected: true),
-                      CategoryChip(
-                        title: "Mountains",
-                        onTap: () async {
-                          final results =
-                          await ApiService.fetchCategoryPlaces("mountains");
-
-                          setState(() => places = results);
-                        },
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Hi, ${userName.isEmpty ? "User" : userName} 👋",
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 5),
+                          const Text(
+                            "Find your favorite place",
+                            style: TextStyle(fontSize: 22),
+                          ),
+                        ],
                       ),
-                      CategoryChip(
-                        title: "Beaches",
-                        onTap: () async {
-                          final results =
-                          await ApiService.fetchCategoryPlaces("beaches");
-
-                          setState(() => places = results);
-                        },
-                      ),
-                      CategoryChip(
-                        title: "Desert",
-                        onTap: () async {
-                          final results =
-                          await ApiService.fetchCategoryPlaces("desert");
-
-                          setState(() => places = results);
-                        },
-                      ),
-                      CategoryChip(
-                        title: "National Parks",
-                        onTap: () async {
-                          final results =
-                          await ApiService.fetchCategoryPlaces("national parks");
-
-                          setState(() => places = results);
-                        },
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ProfileScreen()),
+                        ),
+                        child: CircleAvatar(
+                            backgroundColor: Colors.grey.shade300),
                       ),
                     ],
                   ),
-                ),
 
-                 SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                 Text(
-                  "Explore destinations",
-                  style: TextStyle(fontSize: 16),
-                ),
-
-                 SizedBox(height: 10),
-
-                /// ⏳ LOADING
-                if (isLoading)
-                   Center(child: CircularProgressIndicator()),
-
-                /// 📦 RESULTS
-                if (!isLoading)
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: places.isEmpty
-                          ? defaultPlaces.length
-                          : places.length,
-                      itemBuilder: (context, index) {
-                        final place = places.isEmpty
-                            ? defaultPlaces[index]
-                            : places[index];
-
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    DetailScreen(place: place),
-                              ),
-                            );
-                          },
-                          child: Padding(
-                            padding:  EdgeInsets.only(bottom: 15),
-                            child: PlaceCard(place: place),
-                          ),
-                        );
-                      },
+                  /// 🔍 SEARCH
+                  TextField(
+                    onChanged: searchPlaces,
+                    decoration: InputDecoration(
+                      hintText: "Search destination...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.grey.shade200,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
-              ],
+
+                  const SizedBox(height: 15),
+
+                  /// 🧭 CATEGORY CHIPS
+                  SizedBox(
+                    height: 40,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        CategoryChip(title: "All", isSelected: true),
+                        CategoryChip(
+                          title: "Mountains",
+                          onTap: () async {
+                            final results = await ApiService
+                                .fetchCategoryPlaces("mountains");
+                            setState(() => places = results);
+                          },
+                        ),
+                        CategoryChip(
+                          title: "Beaches",
+                          onTap: () async {
+                            final results = await ApiService
+                                .fetchCategoryPlaces("beaches");
+                            setState(() => places = results);
+                          },
+                        ),
+                        CategoryChip(
+                          title: "Desert",
+                          onTap: () async {
+                            final results = await ApiService
+                                .fetchCategoryPlaces("desert");
+                            setState(() => places = results);
+                          },
+                        ),
+                        CategoryChip(
+                          title: "National Parks",
+                          onTap: () async {
+                            final results = await ApiService
+                                .fetchCategoryPlaces("national parks");
+                            setState(() => places = results);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    "Explore destinations",
+                    style: TextStyle(fontSize: 16),
+                  ),
+
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
-          ),
-        ///),
+
+            /// ⏳ LOADING — outside the inner Padding so it doesn't break Expanded
+            if (isLoading)
+              const Center(child: CircularProgressIndicator()),
+
+            /// 📦 RESULTS — Expanded here is valid because parent is the outer Column
+            if (!isLoading)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ListView.builder(
+                    itemCount: places.isEmpty
+                        ? defaultPlaces.length
+                        : places.length,
+                    itemBuilder: (context, index) {
+                      final place = places.isEmpty
+                          ? defaultPlaces[index]
+                          : places[index];
+                      return GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => DetailScreen(place: place)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 15),
+                          child: PlaceCard(place: place),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
