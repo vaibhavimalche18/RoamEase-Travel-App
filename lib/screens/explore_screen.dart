@@ -10,6 +10,8 @@ import 'favorite_screen.dart';
 import 'profile_screen.dart';
 import 'quest_screen.dart';
 import 'settings_screen.dart';
+import 'blog_screen.dart';
+import 'blog_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
    ExploreScreen({super.key});
@@ -106,18 +108,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
             /// 🏠 HOME
             IconButton(
               icon: const Icon(Icons.home, color: Colors.blue),
-              onPressed: () {}, // already here, do nothing
+              onPressed: () {},
             ),
 
-            /// 🗺️ MAP (🔥 THIS IS WHAT YOU WERE MISSING)
+            /// 🗺️ MAP
             IconButton(
               icon: const Icon(Icons.map),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const MapScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const MapScreen()),
+                );
+              },
+            ),
+
+            /// 📖 BLOG (🔥 NEW)
+            IconButton(
+              icon: const Icon(Icons.menu_book), // nice blog icon
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BlogScreen(),),
+
                 );
               },
             ),
@@ -128,21 +140,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const FavoriteScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const FavoriteScreen()),
                 );
               },
             ),
 
             /// ⚙️ SETTINGS
             IconButton(
-               icon: const Icon(Icons.settings),
-               onPressed: () => Navigator.push(
-                 context,
-                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
-               ),
-             ),
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -186,7 +198,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     child: CircleAvatar(
                       radius: 22,
                       backgroundImage: NetworkImage(
-                          "https://i.pravatar.cc/150?img=3"),
+                        "https://i.pravatar.cc/150?img=3",
+                      ),
+                      onBackgroundImageError: (_, __) {
+                        // fallback handled below
+                      },
                     ),
                   )
                   ],
