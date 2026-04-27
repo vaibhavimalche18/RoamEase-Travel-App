@@ -4,19 +4,23 @@ import '../widgets/blog_card.dart';
 import '../services/blog_service.dart';
 import 'add_blog_screen.dart';
 
-class BlogScreen extends StatelessWidget {
+class BlogScreen extends StatefulWidget {
   const BlogScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final BlogService _blogService = BlogService();
+  State<BlogScreen> createState() => _BlogScreenState(); // ✅ this was missing
+}
 
+class _BlogScreenState extends State<BlogScreen> {
+  final BlogService _blogService = BlogService(); // ✅ created once, not on every build
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Travel Blogs"),
       ),
 
-      /// 🔥 ADD BLOG BUTTON (THIS WAS MISSING)
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

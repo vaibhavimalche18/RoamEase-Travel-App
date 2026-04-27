@@ -12,7 +12,7 @@ class BlogService {
         .snapshots();
   }
 
-  /// 📌 Add blog (STRICT + SAFE)
+  /// 📌 Add blog
   Future<void> addBlog({
     required String title,
     required String description,
@@ -36,33 +36,36 @@ class BlogService {
     });
   }
 
-  /// ❤️ Toggle Like (FIXED + SAFE)
+  /// ❤️ Toggle Like (TRANSACTION — race condition safe)
   Future<void> toggleLike(String blogId) async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) return;
 
     final blogRef = _firestore.collection('blogs').doc(blogId);
     final likeRef = blogRef.collection('likes').doc(user.uid);
 
-    final likeDoc = await likeRef.get();
+    await _firestore.runTransaction((transaction) async {
+      final likeSnap = await transaction.get(likeRef);
 
-    if (likeDoc.exists) {
-      await likeRef.delete();
-      await blogRef.update({
-        'likesCount': FieldValue.increment(-1),
-      });
-    } else {
-      await likeRef.set({
-        'likedAt': FieldValue.serverTimestamp(),
-      });
-      await blogRef.update({
-        'likesCount': FieldValue.increment(1),
-      });
-    }
+      if (likeSnap.exists) {
+        // Already liked → unlike
+        transaction.delete(likeRef);
+        transaction.update(blogRef, {
+          'likesCount': FieldValue.increment(-1),
+        });
+      } else {
+        // Not liked → like
+        transaction.set(likeRef, {
+          'likedAt': FieldValue.serverTimestamp(),
+        });
+        transaction.update(blogRef, {
+          'likesCount': FieldValue.increment(1),
+        });
+      }
+    });
   }
 
-  /// 🗑 Delete blog (OWNER ONLY SHOULD BE ENFORCED IN UI)
+  /// 🗑 Delete blog
   Future<void> deleteBlog(String blogId) async {
     await _firestore.collection('blogs').doc(blogId).delete();
   }
@@ -70,7 +73,6 @@ class BlogService {
   /// 💬 Add comment
   Future<void> addComment(String blogId, String text) async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) return;
 
     await _firestore

@@ -10,6 +10,7 @@ import 'favorite_screen.dart';
 import 'profile_screen.dart';
 import 'quest_screen.dart';
 import 'settings_screen.dart';
+import 'blog_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
    ExploreScreen({super.key});
@@ -130,6 +131,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const FavoriteScreen(),
+                  ),
+                );
+              },
+            ),
+            /// 📝 BLOG  ← ADD THIS
+            IconButton(
+              icon: const Icon(Icons.article),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BlogScreen(),
                   ),
                 );
               },
