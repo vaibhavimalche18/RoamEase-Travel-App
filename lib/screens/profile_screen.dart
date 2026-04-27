@@ -145,20 +145,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () => _showDNADialog(context),
                 ),
                 const SizedBox(height: 14),
-                _BoardingPassCard(
-                  destination: 'MY PASSPORT',
-                  subtitle: 'My Travel Profile',
-                  tagline: 'Stamps, wishlist & style',
-                  flightCode: 'RE-003',
-                  accentColor: const Color(0xFF1E8449),
-                  bgColor: const Color(0xFFEAF7EF),
-                  icon: Icons.book_rounded,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const TravelProfileScreen()),
-                  ),
-                ),
+               _BoardingPassCard(
+                 destination: 'MY PASSPORT',
+                 subtitle: 'My Travel Profile',
+                 tagline: 'Stamps, wishlist & style',
+                 flightCode: 'RE-003',
+                 accentColor: const Color(0xFF1E8449),
+                 bgColor: const Color(0xFFEAF7EF),
+                 icon: Icons.book_rounded,
+                 onTap: () async {
+                   await Navigator.push(
+                     context,
+                     MaterialPageRoute(builder: (_) => const TravelProfileScreen()),
+                   );
+                   loadUser();
+                 },
+               ),
                 const SizedBox(height: 32),
               ]),
             ),
