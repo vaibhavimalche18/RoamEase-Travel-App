@@ -25,23 +25,23 @@ class MatchService {
     final my = myDoc.data() ?? {};
     final other = otherDoc.data() ?? {};
 
-    // ── Sets ──
-    final myVisited = Set<String>.from(my['visitedPlaces'] ?? []);
-    final otherVisited = Set<String>.from(other['visitedPlaces'] ?? []);
-    final myWishlist = Set<String>.from(my['wishlist'] ?? []);
-    final otherWishlist = Set<String>.from(other['wishlist'] ?? []);
-    final myStyle = Set<String>.from(my['travelStyle'] ?? []);
-    final otherStyle = Set<String>.from(other['travelStyle'] ?? []);
+    // ── Normalize to lowercase sets for comparison ──
+    final myVisited = _normalizedSet(my['visitedPlaces']);
+    final otherVisited = _normalizedSet(other['visitedPlaces']);
+    final myWishlist = _normalizedSet(my['wishlist']);
+    final otherWishlist = _normalizedSet(other['wishlist']);
+    final myStyle = _normalizedSet(my['travelStyle']);
+    final otherStyle = _normalizedSet(other['travelStyle']);
 
-    // ── Single-value fields ──
-    final myBudget = my['budget'] as String?;
-    final otherBudget = other['budget'] as String?;
-    final myCompanion = my['companionPref'] as String?;
-    final otherCompanion = other['companionPref'] as String?;
-    final myClimate = my['climatePref'] as String?;
-    final otherClimate = other['climatePref'] as String?;
-    final myDuration = my['tripDuration'] as String?;
-    final otherDuration = other['tripDuration'] as String?;
+    // ── Single-value fields (lowercase for comparison) ──
+    final myBudget = _norm(my['budget']);
+    final otherBudget = _norm(other['budget']);
+    final myCompanion = _norm(my['companionPref']);
+    final otherCompanion = _norm(other['companionPref']);
+    final myClimate = _norm(my['climatePref']);
+    final otherClimate = _norm(other['climatePref']);
+    final myDuration = _norm(my['tripDuration']);
+    final otherDuration = _norm(other['tripDuration']);
 
     // ── Score calculation ──
     double score = 0;
@@ -61,24 +61,24 @@ class MatchService {
 
     return {
       'score': score.round(),
-      'otherName': other['displayName'] ?? 'Traveler',
+      'otherName': other['name'] ?? other['displayName'] ?? 'Traveler',
       'otherBio': other['bio'] ?? '',
-      // Overlap lists
-      'sharedVisited': myVisited.intersection(otherVisited).toList(),
-      'sharedWishlist': myWishlist.intersection(otherWishlist).toList(),
-      'youCanGuide': myVisited.intersection(otherWishlist).toList(),
-      'theyCanGuide': otherVisited.intersection(myWishlist).toList(),
-      'sharedStyles': myStyle.intersection(otherStyle).toList(),
+      // Overlap lists — capitalized for display
+      'sharedVisited': _capitalize(myVisited.intersection(otherVisited)),
+      'sharedWishlist': _capitalize(myWishlist.intersection(otherWishlist)),
+      'youCanGuide': _capitalize(myVisited.intersection(otherWishlist)),
+      'theyCanGuide': _capitalize(otherVisited.intersection(myWishlist)),
+      'sharedStyles': _capitalize(myStyle.intersection(otherStyle)),
       // Single-value matches
       'budgetMatch': _exactMatch(myBudget, otherBudget),
       'companionMatch': _exactMatch(myCompanion, otherCompanion),
       'climateMatch': _exactMatch(myClimate, otherClimate),
       'durationMatch': _exactMatch(myDuration, otherDuration),
-      // Raw values for display
-      'otherBudget': otherBudget,
-      'otherCompanion': otherCompanion,
-      'otherClimate': otherClimate,
-      'otherDuration': otherDuration,
+      // Raw values for display (original casing from Firestore)
+      'otherBudget': other['budget'],
+      'otherCompanion': other['companionPref'],
+      'otherClimate': other['climatePref'],
+      'otherDuration': other['tripDuration'],
       'otherFrequency': other['travelFrequency'],
     };
   }
@@ -121,6 +121,29 @@ class MatchService {
   // ─────────────────────────────────────────
   // Helpers
   // ─────────────────────────────────────────
+
+  /// Converts a Firestore list field into a normalized lowercase Set<String>.
+  Set<String> _normalizedSet(dynamic field) {
+    if (field == null) return {};
+    return Set<String>.from(
+      (field as List).map((e) => e.toString().trim().toLowerCase()),
+    );
+  }
+
+  /// Normalizes a single string value to lowercase for comparison.
+  String? _norm(dynamic value) =>
+      value == null ? null : value.toString().trim().toLowerCase();
+
+  /// Capitalizes first letter of each word in a set for display.
+  List<String> _capitalize(Set<String> items) {
+    return items.map((s) {
+      if (s.isEmpty) return s;
+      return s.split(' ').map((word) {
+        if (word.isEmpty) return word;
+        return word[0].toUpperCase() + word.substring(1);
+      }).join(' ');
+    }).toList();
+  }
 
   int _max(int a, int b) => a > b ? a : b;
 

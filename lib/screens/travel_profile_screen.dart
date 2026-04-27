@@ -98,13 +98,23 @@ class _TravelProfileScreenState extends State<TravelProfileScreen> {
     }
   }
 
-  void _addChip(List<String> list, TextEditingController controller) {
-    final value = controller.text.trim();
-    if (value.isNotEmpty && !list.contains(value)) {
-      setState(() => list.add(value));
-      controller.clear();
-    }
-  }
+ void _addChip(List<String> list, TextEditingController controller) {
+   final raw = controller.text.trim();
+   if (raw.isEmpty) return;
+
+   // Split by comma, trim each, filter empty
+   final places = raw.split(',')
+       .map((p) => p.trim())
+       .where((p) => p.isNotEmpty)
+       .toList();
+
+   setState(() {
+     for (final place in places) {
+       if (!list.contains(place)) list.add(place);
+     }
+   });
+   controller.clear();
+ }
 
   void _removeChip(List<String> list, String item) =>
       setState(() => list.remove(item));
@@ -174,7 +184,7 @@ class _TravelProfileScreenState extends State<TravelProfileScreen> {
               Icons.where_to_vote, Colors.blue, 'Places You\'ve Visited'),
           _ChipInputField(
             controller: _visitedController,
-            hint: 'e.g. Paris, Bali, Tokyo',
+            hint: 'Type one place and tap Add',
             onAdd: () => _addChip(_visitedPlaces, _visitedController),
             chips: _visitedPlaces,
             chipColor: Colors.blue,
@@ -186,7 +196,7 @@ class _TravelProfileScreenState extends State<TravelProfileScreen> {
           _sectionHeader(Icons.favorite, Colors.pink, 'Dream Destinations'),
           _ChipInputField(
             controller: _wishlistController,
-            hint: 'e.g. Maldives, Iceland, Peru',
+            hint: 'Type one place and tap Add',
             onAdd: () => _addChip(_wishlist, _wishlistController),
             chips: _wishlist,
             chipColor: Colors.pink,
