@@ -102,39 +102,83 @@ class _QuestScreenState extends State<QuestScreen> with SingleTickerProviderStat
           ),
         ],
       ),
-      body: StreamBuilder(
-        stream: _service.getMyQuests(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(color: _stampRed));
-          }
-          final allQuests = snapshot.data!.docs;
+     // Replace the body: StreamBuilder(...) in QuestScreen's build() with this:
 
-          return TabBarView(
-            controller: _tabCtrl,
-            children: [
-              // ── ACTIVE TAB ───────────────────
-              _QuestListView(
-                quests: allQuests,
-                uid: _uid,
-                service: _service,
-                showCompleted: false,
-                onEmpty: () => _showCreateQuestDialog(context),
-              ),
-              // ── SCRAPBOOK TAB ─────────────────
-              _QuestListView(
-                quests: allQuests,
-                uid: _uid,
-                service: _service,
-                showCompleted: true,
-                onEmpty: () => _showCreateQuestDialog(context),
-              ),
-              // ── INVITES TAB ───────────────────
-              _InvitesTab(service: _service, uid: _uid),
-            ],
-          );
-        },
-      ),
+     body: StreamBuilder(
+       stream: _service.getMyQuests(),
+       builder: (context, snapshot) {
+         // Show loading only on the very first frame (no data AND no error yet)
+         if (snapshot.connectionState == ConnectionState.waiting &&
+             !snapshot.hasData) {
+           return const Center(
+               child: CircularProgressIndicator(color: _stampRed));
+         }
+
+         // Show error state instead of loading forever
+         if (snapshot.hasError) {
+           return Center(
+             child: Column(mainAxisSize: MainAxisSize.min, children: [
+               const Text('⚠️', style: TextStyle(fontSize: 36)),
+               const SizedBox(height: 12),
+               const Text('Could not load quests',
+                   style: TextStyle(
+                       color: _inkBrown,
+                       fontWeight: FontWeight.bold,
+                       fontSize: 15)),
+               const SizedBox(height: 6),
+               Text(
+                 snapshot.error.toString().contains('index')
+                     ? 'Firestore index missing.\nCheck Firebase Console → Indexes.'
+                     : snapshot.error.toString(),
+                 textAlign: TextAlign.center,
+                 style: const TextStyle(color: _dimInk, fontSize: 12),
+               ),
+               const SizedBox(height: 20),
+               GestureDetector(
+                 onTap: () => setState(() {}), // retry
+                 child: Container(
+                   padding:
+                       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                   decoration: BoxDecoration(
+                     color: _stampRed,
+                     borderRadius: BorderRadius.circular(6),
+                   ),
+                   child: const Text('RETRY',
+                       style: TextStyle(
+                           color: Colors.white,
+                           fontWeight: FontWeight.bold,
+                           letterSpacing: 1.5)),
+                 ),
+               ),
+             ]),
+           );
+         }
+
+         // snapshot.hasData is true even for empty results — use docs
+         final allQuests = snapshot.data?.docs ?? [];
+
+         return TabBarView(
+           controller: _tabCtrl,
+           children: [
+             _QuestListView(
+               quests: allQuests,
+               uid: _uid,
+               service: _service,
+               showCompleted: false,
+               onEmpty: () => _showCreateQuestDialog(context),
+             ),
+             _QuestListView(
+               quests: allQuests,
+               uid: _uid,
+               service: _service,
+               showCompleted: true,
+               onEmpty: () => _showCreateQuestDialog(context),
+             ),
+             _InvitesTab(service: _service, uid: _uid),
+           ],
+         );
+       },
+     ),
     );
   }
 
